@@ -3,29 +3,31 @@ import crossMarkWalletSDK from "@crossmarkio/sdk"
 import * as gemWalletAPI from "@gemwallet/api"
 import { Xumm } from "xumm"
 
-import { CROSS_MARK_WALLET_CONNECT, GEM_WALLET_CONNECT, } from "@/constants/types";
+import { CROSS_MARK_WALLET_CONNECT, GEM_WALLET_CONNECT, XAMAN_WALLET_CONNECT, } from "@/constants/types";
 import MainLayout from "@/components/ui/layout/MainLayout";
+import WalletConnect from "@/components/ui/WalletConnector/WalletConnect";
 
-const xumm = new Xumm(import.meta.env.VITE_XUMM_API_KEY);
+const xumm = new Xumm(import.meta.env.VITE_XUMM_API_KEY || "");
 
 const Home: React.FC = () => {
   const [walletAddress, setWalletAddress] = useState<string>("")
   const [amount, setAmount] = useState<string>("0")
   const [destination, setDestination] = useState<string>("")
   const [connectedWallet, setConnectedWallet] = useState<string>("")
+  const [isMobile, setIsMobile] = useState(false)
+  const [qrcode, setQrCode] = useState<string>("")
   useEffect(() => {
-    console.log(true)
-    console.log(xumm)
-    xumm.on("ready", () => console.log("Ready (e.g. hide loading state of page)"))
-    xumm.user.account.then(a => {
-      console.log(a)
+    if (window.innerWidth < 768) {
+      setIsMobile(false);
+    }
+    return (() => {
+      xumm.logout()
     })
-
   }, [])
+
+
   xumm.on("ready", () => console.log("Ready (e.g. hide loading state of page)"))
-  xumm.user.account.then(a => {
-    console.log(a)
-  })
+
 
   const handleConnnectGemWallet = () => {
     try {
@@ -73,6 +75,13 @@ const Home: React.FC = () => {
 
   const handleConnectXummWallet = async () => {
     try {
+      xumm.user.account.then(a => {
+        console.log(a)
+        if (a) {
+          setWalletAddress(a)
+          setConnectedWallet(XAMAN_WALLET_CONNECT)
+        }
+      })
       xumm.authorize().then((res) => {
         console.log(res)
       })
@@ -88,7 +97,6 @@ const Home: React.FC = () => {
         destination
       }
       const paymentRes = await gemWalletAPI.sendPayment(payment)
-      console.log(paymentRes)
       return paymentRes
     } catch (err) {
       console.log(`Err `, err)
@@ -97,13 +105,6 @@ const Home: React.FC = () => {
 
   const sendPaymentWithCrossMarkWallet = async () => {
     try {
-      const payment = {
-        TransactionType: "Payment",
-        Account: walletAddress,
-        Destination: destination,
-        Amount: amount
-      }
-      console.log(payment)
       const id = crossMarkWalletSDK.sync.sign({
         TransactionType: "Payment",
         Account: walletAddress,
@@ -111,10 +112,61 @@ const Home: React.FC = () => {
         Amount: amount
       })
       const res = crossMarkWalletSDK.sync.getResponse(id)
-      console.log(res)
       return res
     } catch (err) {
       console.log(`Err `, err)
+    }
+  }
+
+  const sendPaymentWithXamanWallet = async () => {
+    try {
+      if (xumm.payload) {
+        if (!isMobile) {
+          const paload = await xumm.payload.create({
+            txjson: {
+              TransactionType: "Payment",
+              Destination: destination,
+              Amount: amount
+            },
+          })
+          if (paload?.refs.qr_png && paload?.next.always) {
+            setQrCode(paload?.refs.qr_png)
+            window.open(paload.next.always, "_blank");
+          }
+        } else {
+          const payload = await xumm.payload?.createAndSubscribe({
+            TransactionType: 'Payment',
+            Destination: 'rwietsevLFg8XSmG3bEZzFein1g8RBqWDZ',
+            Account: walletAddress,
+            Amount: String(1337),
+          }, event => {
+
+            // Only return (websocket will live till non void)
+            if (Object.keys(event.data).indexOf('signed') > -1) {
+              return true
+            }
+          })
+
+          if (payload) {
+            // setPayloadUuid(payload.created.uuid)
+            console.log(payload)
+            if (xumm.runtime.xapp) {
+              xumm.xapp?.openSignRequest(payload.created)
+            } else {
+              if (payload.created.pushed && payload.created.next?.no_push_msg_received) {
+                // setOpenPayloadUrl(payload.created.next.no_push_msg_received)
+              } else {
+                window.open(payload.created.next.always)
+              }
+            }
+          }
+        }
+
+
+      }
+
+    } catch (err) {
+      console.log(`Err`, err)
     }
   }
 
@@ -128,6 +180,9 @@ const Home: React.FC = () => {
         case CROSS_MARK_WALLET_CONNECT:
           const res = await sendPaymentWithCrossMarkWallet()
           console.log(res)
+          break;
+        case XAMAN_WALLET_CONNECT:
+          await sendPaymentWithXamanWallet()
           break;
         default:
           break;
@@ -166,8 +221,13 @@ const Home: React.FC = () => {
                 Connect with Xumm
               </button>
             </div>
+            <WalletConnect />
           </div>
-
+        </div>
+        <div>
+          {qrcode && (
+            <img src={qrcode} className=" hidden" />
+          )}
         </div>
         <div className=" w-full" >
           {
