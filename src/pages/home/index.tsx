@@ -103,6 +103,7 @@ const Home: React.FC = () => {
         Destination: destination,
         Amount: amount
       }
+      console.log(payment)
       const id = crossMarkWalletSDK.sync.sign({
         TransactionType: "Payment",
         Account: walletAddress,
@@ -122,9 +123,11 @@ const Home: React.FC = () => {
       switch (connectedWallet) {
         case GEM_WALLET_CONNECT:
           const result = await sendPaymentWithGemWallet()
+          console.log(result)
           break;
         case CROSS_MARK_WALLET_CONNECT:
           const res = await sendPaymentWithCrossMarkWallet()
+          console.log(res)
           break;
         default:
           break;
