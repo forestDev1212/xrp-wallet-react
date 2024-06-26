@@ -25,10 +25,6 @@ const Home: React.FC = () => {
     })
   }, [])
 
-
-  xumm.on("ready", () => console.log("Ready (e.g. hide loading state of page)"))
-
-
   const handleConnnectGemWallet = () => {
     try {
       gemWalletAPI.isInstalled().then((connectResult) => {
@@ -58,9 +54,7 @@ const Home: React.FC = () => {
         let id = crossMarkWalletSDK.sync.signIn();
         const res = crossMarkWalletSDK.sync.getResponse(id)
         const address = crossMarkWalletSDK.sync.getAddress()
-        console.log(id);
         console.log(res)
-        console.log(address)
         if (address) {
           setWalletAddress(address)
           setConnectedWallet(CROSS_MARK_WALLET_CONNECT)
@@ -76,7 +70,6 @@ const Home: React.FC = () => {
   const handleConnectXummWallet = async () => {
     try {
       xumm.user.account.then(a => {
-        console.log(a)
         if (a) {
           setWalletAddress(a)
           setConnectedWallet(XAMAN_WALLET_CONNECT)
@@ -149,7 +142,6 @@ const Home: React.FC = () => {
 
           if (payload) {
             // setPayloadUuid(payload.created.uuid)
-            console.log(payload)
             if (xumm.runtime.xapp) {
               xumm.xapp?.openSignRequest(payload.created)
             } else {
@@ -174,12 +166,10 @@ const Home: React.FC = () => {
     try {
       switch (connectedWallet) {
         case GEM_WALLET_CONNECT:
-          const result = await sendPaymentWithGemWallet()
-          console.log(result)
+          await sendPaymentWithGemWallet()
           break;
         case CROSS_MARK_WALLET_CONNECT:
-          const res = await sendPaymentWithCrossMarkWallet()
-          console.log(res)
+          await sendPaymentWithCrossMarkWallet()
           break;
         case XAMAN_WALLET_CONNECT:
           await sendPaymentWithXamanWallet()
@@ -199,7 +189,7 @@ const Home: React.FC = () => {
           <div>
             <div>
               <button
-                className="mt-2 rounded-md bg-orange-500 hover:bg-orange-600 w-48 h-12"
+                className="mt-2 rounded-md bg-green-500 hover:bg-green-600 w-48 h-12"
                 onClick={handleConnnectGemWallet}
               >
                 Connect with Gem
@@ -207,7 +197,7 @@ const Home: React.FC = () => {
             </div>
             <div>
               <button
-                className="mt-2 rounded-md bg-orange-500 hover:bg-orange-600 w-48 h-12"
+                className="mt-2 rounded-md bg-red-500 hover:bg-red-600 w-48 h-12"
                 onClick={handleCrossMarkWallet}
               >
                 Connect with Crossmark
@@ -215,7 +205,7 @@ const Home: React.FC = () => {
             </div>
             <div>
               <button
-                className="mt-2 rounded-md bg-orange-500 hover:bg-orange-600 w-48 h-12"
+                className="mt-2 rounded-md bg-purple-500 hover:bg-purple-600 w-48 h-12"
                 onClick={handleConnectXummWallet}
               >
                 Connect with Xumm
