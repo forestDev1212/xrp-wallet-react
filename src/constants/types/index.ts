@@ -1,0 +1,7 @@
+export const WALLET_TYPE = {
+  GEM: "GEM",
+  CROSS_MARK: "CROSS MARK",
+}
+
+export const GEM_WALLET_CONNECT = "GEM WALLET"
+export const CROSS_MARK_WALLET_CONNECT = "CROSS MARK WALLET"
